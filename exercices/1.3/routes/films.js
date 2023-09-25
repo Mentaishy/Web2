@@ -25,26 +25,32 @@ const films = [
     },
   ];
 
-  // Read all the films
-router.get('/', function (req, res) {
-    return res.json(films);
-  });
-
   /* Read all films from the menu
    GET /films?minimum-duration=value : order by minimum duration
 */
 router.get('/', (req, res, next) => {
     const orderByMinDuration =
-      req?.query?.order?.includes('duration')
-        ? req.query.order
+      req?.query
+        ? Number(req.query['minimum-duration'])
         : undefined;
     let orderedMenu;
     console.log(`order by ${orderByMinDuration ?? 'not requested'}`);
     if (orderByMinDuration)
-      orderedMenu = [...MENU].filter((element) => element.duration >= orderByMinDuration);
+      orderedMenu = films.filter((films) => films.duration >= orderByMinDuration);
   
     console.log('GET /films');
-    res.json(orderedMenu ?? MENU);
+    res.json(orderedMenu ?? films);
+  });
+
+  // Read films identified by an id in the menu
+router.get('/:id', (req, res) => {
+    console.log(`GET /films/${req.params.id}`);
+  
+    const indexOfFilmsFound = films.findIndex((films) => films.id == req.params.id);
+  
+    if (indexOfFilmsFound < 0) return res.sendStatus(404);
+  
+    res.json(films[indexOfFilmsFound]);
   });
 
 module.exports = router;
