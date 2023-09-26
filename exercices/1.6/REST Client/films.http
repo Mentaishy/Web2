@@ -1,0 +1,23 @@
+@baseUrl = http://localhost:3000
+
+### Delete films identified by 6
+DELETE {{baseUrl}}/films/3
+
+### Update films identified by 2
+PATCH {{baseUrl}}/films/2
+Content-Type: application/json
+
+{
+    "title":"Star Wars: Episode II – - Attack of the Clones"
+}
+
+### CREAT new films identified by 10
+PUT  {{baseUrl}}/films/10
+Content-Type: application/json
+
+{
+    "title":"Apou des simson",
+    "duration": 230,
+    "budget": 400,
+    "link":"https://en.wikipedia.org/wiki/Star_Wars:_Episode_I_%E2%80%93_The_Phantom_Menace"
+}
