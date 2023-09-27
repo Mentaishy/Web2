@@ -151,7 +151,7 @@ router.put('/:id', (req, res) => {
 
     const foundIndexFilms = films.findIndex(films => films.id == req.params.id);
 
-    if (indexOfFilmFound < 0) {
+    if (foundIndexFilms < 0) {
         const newFilm = { id, title, link, duration, budget };
         films.push(newFilm);
         return res.json(newFilm);

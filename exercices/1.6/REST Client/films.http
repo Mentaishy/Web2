@@ -12,7 +12,7 @@ Content-Type: application/json
 }
 
 ### CREAT new films identified by 10
-PUT  {{baseUrl}}/films/10
+PUT  {{baseUrl}}/films/2
 Content-Type: application/json
 
 {
