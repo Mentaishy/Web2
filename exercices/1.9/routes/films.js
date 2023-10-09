@@ -1,65 +1,34 @@
 const express = require('express');
-const { serialize, parse } = require('../utils/json');
+const {
+  readAllFilms,
+  readOneFilm,
+  createOneFilm,
+  deleteOneFilm,
+  updatePartiallyOneFilm,
+  updateFullyOneFilmOrCreateOneFilm,
+} = require('../models/films');
 
 const router = express.Router();
 
-const jsonDbPath = `${__dirname}/../data/films.json`;
-
-const films = [
-  {
-    id: 1,
-    title: 'Star Wars: The Phantom Menace (Episode I)',
-    duration: 136,
-    budget: '115',
-    link: 'https://en.wikipedia.org/wiki/Star_Wars:_Episode_I_%E2%80%93_The_Phantom_Menace',
-  },
-  {
-    id: 2,
-    title: 'Star Wars: Episode II – Attack of the Clones',
-    duration: 142,
-    budget: 115,
-    link: 'https://en.wikipedia.org/wiki/Star_Wars:_Episode_II_%E2%80%93_Attack_of_the_Clones',
-  },
-  {
-    id: 3,
-    title: "Zack Snyder's Justice League",
-    duration: 242,
-    budget: 70,
-    link: 'https://en.wikipedia.org/wiki/Zack_Snyder%27s_Justice_League',
-  },
-];
-
-/* Read all films from the menu
- GET /films?minimum-duration=value : order by minimum duration
-*/
+// Read all the films, filtered by minimum-duration if the query param exists
 router.get('/', (req, res) => {
-  const orderByMinDuration = req?.query ? Number(req.query['minimum-duration']) : undefined;
+  const filmsPotentiallyFiltered = readAllFilms(req?.query?.['minimum-duration']);
 
-  let orderedMenu;
-  console.log(`order by ${orderByMinDuration ?? 'not requested'}`);
+  if (filmsPotentiallyFiltered === undefined) return res.sendStatus(400);
 
-  const myMovies = parse(jsonDbPath, films);
-
-  if (orderByMinDuration) orderedMenu = films.filter((film) => film.duration >= orderByMinDuration);
-
-  console.log('GET /films');
-  res.json(orderedMenu ?? myMovies);
+  return res.json(filmsPotentiallyFiltered);
 });
 
-// Read films identified by an id in the menu
+// Read a film from its id in the menu
 router.get('/:id', (req, res) => {
-  console.log(`GET /films/${req.params.id}`);
+  const foundFilm = readOneFilm(req?.params?.id);
 
-  const myMovies = parse(jsonDbPath, films);
+  if (!foundFilm) return res.sendStatus(404);
 
-  const indexOfFilmsFound = myMovies.findIndex((film) => film.id === req.params.id);
-
-  if (indexOfFilmsFound < 0) return res.sendStatus(404);
-
-  return res.json(myMovies[indexOfFilmsFound]);
+  return res.json(foundFilm);
 });
 
-// Create a films.
+// Create a film
 router.post('/', (req, res) => {
   const title = req?.body?.title?.trim()?.length !== 0 ? req.body.title : undefined;
   const link = req?.body?.content?.trim().length !== 0 ? req.body.link : undefined;
@@ -70,53 +39,28 @@ router.post('/', (req, res) => {
   const budget =
     typeof req?.body?.budget !== 'number' || req.body.budget < 0 ? undefined : req.body.budget;
 
-  console.log('POST /films');
+  if (!title || !link || !duration || !budget) return res.sendStatus(400);
 
-  if (!title || !link || !duration || !budget) return res.sendStatus(400); // bad practise (will be improved in exercise 1.5)
+  const createdFilm = createOneFilm(title, link, duration, budget);
 
-  const myMovies = parse(jsonDbPath, films);
-
-  const lastItemIndex = myMovies?.length !== 0 ? myMovies.length - 1 : undefined;
-  const lastId = lastItemIndex !== undefined ? myMovies[lastItemIndex]?.id : 0;
-  const nextId = lastId + 1;
-
-  const newFilm = { id: nextId, title, link, duration, budget };
-
-  myMovies.push(newFilm);
-
-  serialize(jsonDbPath, myMovies);
-
-  return res.json(newFilm);
+  return res.json(createdFilm);
 });
 
-// Delete a films from the menu based on its id
+// Delete a film
 router.delete('/:id', (req, res) => {
-  console.log(`DELETE /films/${req.params.id}`);
+  const deletedFilm = deleteOneFilm(req?.params?.id);
 
-  const myMovies = parse(jsonDbPath, films);
+  if (!deletedFilm) return res.sendStatus(404);
 
-  const foundIndexFilms = myMovies.findIndex((film) => film.id === req.params.id);
-
-  if (foundIndexFilms < 0) return res.sendStatus(404);
-
-  const itemsRemovedFromMenu = myMovies.splice(foundIndexFilms, 1);
-  const itemRemoved = itemsRemovedFromMenu[0];
-
-  serialize(jsonDbPath, myMovies);
-
-  return res.json(itemRemoved);
+  return res.json(deletedFilm);
 });
 
-// Update a films based on its id and new values for its parameters
+// Update one or more properties of a film identified by its id
 router.patch('/:id', (req, res) => {
-  console.log(`PATCH /films/${req.params.id}`);
-
   const title = req?.body?.title;
   const link = req?.body?.link;
   const duration = req?.body?.duration;
   const budget = req?.body?.budget;
-
-  console.log('PATCH / films');
 
   if (
     !req.body ||
@@ -127,60 +71,38 @@ router.patch('/:id', (req, res) => {
   )
     return res.sendStatus(400);
 
-  const myMovies = parse(jsonDbPath, films);
+  const updatedFilm = updatePartiallyOneFilm(req?.params?.id, req?.body);
 
-  const foundIndexFilms = myMovies.findIndex((film) => film.id === req.params.id);
+  if (!updatedFilm) return res.sendStatus(404);
 
-  if (foundIndexFilms < 0) return res.sendStatus(404);
-
-  const updatedFilms = { ...myMovies[foundIndexFilms], ...req.body };
-
-  myMovies[foundIndexFilms] = updatedFilms;
-
-  serialize(jsonDbPath, myMovies);
-
-  return res.json(updatedFilms);
+  return res.json(updatedFilm);
 });
 
-// UPDATE or CREATE a films based on its id and all values for its parameters
+// Update a film only if all properties are given or create it if it does not exist and the id is not existant
 router.put('/:id', (req, res) => {
-  console.log(`PPUT /films/${req.params.id}`);
-
-  const myMovies = parse(jsonDbPath, films);
-
   const title = req?.body?.title;
   const link = req?.body?.link;
   const duration = req?.body?.duration;
   const budget = req?.body?.budget;
 
-  console.log('PATCH / films');
-
   if (
     !req.body ||
-    (title !== undefined && !title.trim()) ||
-    (link !== undefined && !link.trim()) ||
-    (duration !== undefined && (typeof req?.body?.duration !== 'number' || duration < 0)) ||
-    (budget !== undefined && (typeof req?.body?.budget !== 'number' || budget < 0))
+    !title ||
+    !title.trim() ||
+    !link ||
+    !link.trim() ||
+    duration === undefined ||
+    typeof req?.body?.duration !== 'number' ||
+    duration < 0 ||
+    budget === undefined ||
+    typeof req?.body?.budget !== 'number' ||
+    budget < 0
   )
     return res.sendStatus(400);
 
-  const foundIndexFilms = myMovies.findIndex((film) => film.id === req.params.id);
+  const updatedFilmOrNewFilm = updateFullyOneFilmOrCreateOneFilm(req?.params?.id, req?.body);
 
-  if (foundIndexFilms < 0) {
-    const newFilm = { title, link, duration, budget };
-    myMovies.push(newFilm);
-    return res.json(newFilm);
-  }
-
-  if (foundIndexFilms < 0) return res.sendStatus(404);
-
-  const updatedFilms = { ...myMovies[foundIndexFilms], ...req.body };
-
-  films[foundIndexFilms] = updatedFilms;
-
-  serialize(jsonDbPath, myMovies);
-
-  return res.json(updatedFilms);
+  return res.json(updatedFilmOrNewFilm);
 });
 
 module.exports = router;
