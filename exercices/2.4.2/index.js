@@ -1,28 +1,77 @@
-const divRed = document.querySelector(".red");
-const divOrange = document.querySelector(".orange");
-const divGreen = document.querySelector(".green");
+const redLamp = document.querySelector('.red');
+const orangeLamp = document.querySelector('.orange');
+const greenLamp = document.querySelector('.green');
 
-const red = 'red';
-const orange = 'orange';
-const green = 'green';
-const white = '';
+const redColor = 'red';
+const orangeColor = 'orange';
+const greenColor = 'green';
+const noLightColor = '';
 
-const myIntervalId = 2000;
+const delaysBetweenLightChanges = 1000;
 
+cycleThroughLamps();
 
-start();
-
-function start() {
-    myIntervalId = setInterval(runColor, 2000);
+function cycleThroughLamps() {
+  window.setInterval(
+    showFromRedToGreenToRedWithDelays,
+    delaysBetweenLightChanges * 4
+  );
 }
 
-function runColor() {
-    clockHolder.innerText = time;
+showFromRedToGreenToRedWithDelays();
+
+function showFromRedToGreenToRedWithDelays() {
+  showRedLamp();
+  showOrangeLampOnlyWithDelay(delaysBetweenLightChanges);
+  showGreenLampOnlyWithDelay(2 * delaysBetweenLightChanges);
+  showOrangeLampOnlyWithDelay(3 * delaysBetweenLightChanges);
+  showRedLampOnlyWithDelay(4 * delaysBetweenLightChanges);
 }
 
-function stopColor() {
-    if (myIntervalId) {
-      clearInterval(myIntervalId);
-      myIntervalId = undefined;
-    } else startClock();
-  }
+function showRedLamp() {
+  redLamp.style.backgroundColor = redColor;
+}
+
+function clearRedLamp() {
+  redLamp.style.backgroundColor = noLightColor;
+}
+
+function showRedLampOnlyWithDelay(delay) {
+  window.setTimeout(() => {
+    clearOrangeLamp();
+    clearGreenLamp();
+    showRedLamp();
+  }, delay);
+}
+
+function showOrangeLamp() {
+  orangeLamp.style.backgroundColor = orangeColor;
+}
+
+function showOrangeLampOnlyWithDelay(delay) {
+  window.setTimeout(() => {
+    clearRedLamp();
+    clearGreenLamp();
+    showOrangeLamp();
+  }, delay);
+}
+
+function clearOrangeLamp() {
+  orangeLamp.style.backgroundColor = noLightColor;
+}
+
+function showGreenLampOnlyWithDelay(delay) {
+  window.setTimeout(() => {
+    clearRedLamp();
+    clearOrangeLamp();
+    showGreenLamp();
+  }, delay);
+}
+
+function showGreenLamp() {
+  greenLamp.style.backgroundColor = greenColor;
+}
+
+function clearGreenLamp() {
+  greenLamp.style.backgroundColor = noLightColor;
+}
