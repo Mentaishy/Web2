@@ -6,8 +6,8 @@ import ViewMoviePage from '../Pages/ViewMoviePage';
 const routes = {
   '/': HomePage,
   '/new': NewPage,
-  '/AddMoviePage': AddMoviePage,
-  '/ViewMoviePage': ViewMoviePage
+  '/movies': ViewMoviePage,
+  '/movies/add': AddMoviePage,
 };
 
 export default routes;
