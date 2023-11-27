@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
 const filmsRouter = require('./routes/films');
+const requestStats = require('./utils/stats');
 
 const app = express();
 
